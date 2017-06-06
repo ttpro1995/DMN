@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable as Var
 import torch.nn.functional as F
+import utils
+import math
+import numpy as np
 
 class EpisodicMemoryModule(nn.Module):
     def __init__(self, cuda, in_dim, mem_dim):
@@ -115,6 +118,56 @@ class DMN(nn.Module):
         m = self.memory_module(c, q)
         y = self.answer_module(m)
         return y
+
+class DMNWraper(nn.Module):
+    def __init__(self, cuda, in_dim, mem_dim, out_dim, criterion, train_subtrees, num_classes):
+        super(DMNWraper, self).__init__()
+        self.cudaFlag = cuda
+        self.in_dim = in_dim
+        self.mem_dim = mem_dim
+        self.out_dim = out_dim
+        self.criterion = criterion
+        self.train_subtrees = train_subtrees
+        self.num_classes = num_classes
+
+        self.dmn = DMN(cuda, in_dim, mem_dim, out_dim)
+
+    def forward(self, tree, emb, question_emb, training = False):
+        nodes = tree.depth_first_preorder()
+        loss = Var(torch.zeros(1))  # init zero loss
+        if self.cudaFlag:
+            loss = loss.cuda()
+
+        if self.train_subtrees == -1:
+            n_subtree = len(nodes)
+        else:
+            n_subtree = self.train_subtrees + 1
+        discard_subtree = 0  # trees are discard because neutral
+        if training:
+            for i in range(n_subtree):
+                if i == 0:
+                    node = nodes[0]
+                elif self.train_subtrees != -1:
+                    node = nodes[int(math.ceil(np.random.uniform(0, len(nodes) - 1)))]
+                else:
+                    node = nodes[i]
+                lo, hi = node.lo, node.hi
+                span_vec = emb[lo - 1:hi]  # [inclusive, excludsive)
+                output = self.dmn(span_vec, question_emb)
+
+                if training and node.gold_label != None:
+                    target = utils.map_label_to_target_sentiment(node.gold_label, self.num_classes)
+                    if target is None:
+                        discard_subtree += 1
+                        continue
+                    target = Var(target)
+                    if self.cudaFlag:
+                        target = target.cuda()
+                    loss = loss + self.criterion(output, target)
+
+            loss = loss
+            n_subtree = n_subtree - discard_subtree
+            return output, loss, n_subtree
 
 
 def run_it():
