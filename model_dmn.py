@@ -139,17 +139,17 @@ class DMN(nn.Module):
         return y
 
 class DMNWraper(nn.Module):
-    def __init__(self, cuda, in_dim, mem_dim, out_dim, criterion, train_subtrees, num_classes, embdrop):
+    def __init__(self, cuda, in_dim, mem_dim, criterion, train_subtrees, out_dim, embdrop):
         super(DMNWraper, self).__init__()
         self.cudaFlag = cuda
         self.in_dim = in_dim
         self.mem_dim = mem_dim
         self.out_dim = out_dim
+        self.num_classes = out_dim
         self.criterion = criterion
         self.train_subtrees = train_subtrees
-        self.num_classes = num_classes
 
-        self.dmn = DMN(cuda, in_dim, mem_dim, out_dim)
+        self.dmn = DMN(cuda, in_dim, mem_dim, out_dim, embdrop)
 
     def forward(self, tree, emb, question_emb, training = False):
         nodes = tree.depth_first_preorder()

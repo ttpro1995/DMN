@@ -113,7 +113,7 @@ def main():
     criterion = nn.NLLLoss()
     # initialize model, criterion/loss_function, optimizer
 
-    model = DMNWraper(args.cuda, args.input_dim, args.mem_dim, 3, criterion, args.train_subtrees, args.num_classes, args.embdrop)
+    model = DMNWraper(args.cuda, args.input_dim, args.mem_dim, criterion, args.train_subtrees, args.num_classes, args.embdrop)
 
     embedding_model = nn.Embedding(vocab.size(), args.input_dim)
 
