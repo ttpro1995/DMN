@@ -47,16 +47,10 @@ class SentimentTrainer(object):
             emb = F.torch.unsqueeze(self.embedding_model(input), 1)
             question_emb = F.torch.unsqueeze(self.embedding_model(question), 1)
 
-            if self.args.model_name == 'lstm' or self.args.model_name == 'bilstm':
-                output, err, n_subtrees = self.model.forward(tree, emb, training=True)
-                if self.args.train_subtrees == -1:
-                    n_subtrees = len(tree.depth_first_preorder())
-                else:
-                    n_subtrees = self.args.train_subtrees
-                batch_size = self.args.batchsize * n_subtrees
-            else:
-                output, err = self.model(tree, emb, question_emb, training=True)
-                batch_size = self.args.batchsize
+
+            output, err, n_subtrees = self.model.forward(tree, emb, question_emb, training=True)
+            batch_size = self.args.batchsize * n_subtrees
+
 
             if self.args.reg > 0 or self.args.embreg > 0:
                 params = self.model.getParameters()
@@ -118,7 +112,7 @@ class SentimentTrainer(object):
                 question = question.cuda()
             emb = F.torch.unsqueeze(self.embedding_model(input),1)
             question_emb = F.torch.unsqueeze(self.embedding_model(question), 1)
-            output, _ = self.model(tree, emb, question_emb) # size(1,5)
+            output, _, _= self.model.forward(tree, emb, question_emb, training = False) # size(1,5)
             err = self.criterion(output, target)
             loss += err.data[0]
             if dataset.num_classes == 3:

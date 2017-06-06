@@ -113,7 +113,7 @@ def main():
     criterion = nn.NLLLoss()
     # initialize model, criterion/loss_function, optimizer
 
-    model = DMNWraper(args.cuda, args.input_dim, args.mem_dim, 3, criterion, args.train_subtrees, args.num_classes)
+    model = DMNWraper(args.cuda, args.input_dim, args.mem_dim, 3, criterion, args.train_subtrees, args.num_classes, args.embdrop)
 
     embedding_model = nn.Embedding(vocab.size(), args.input_dim)
 
@@ -256,6 +256,7 @@ def main():
         max_dev_epoch = 0
         filename = args.name + '.pth'
         for epoch in range(args.epochs):
+            # train_loss, train_pred, _ = trainer.test(train_dataset)
             train_loss_while_training = trainer.train(train_dataset)
             train_loss, train_pred, _ = trainer.test(train_dataset)
             dev_loss, dev_pred, _ = trainer.test(dev_dataset)

@@ -103,6 +103,8 @@ def parse_args(type=0):
                             metavar='LR', help='initial learning rate')
         parser.add_argument('--emblr', default=0.1, type=float,
                             metavar='EMLR', help='initial embedding learning rate')
+        parser.add_argument('--embdrop', default=0.5, type=float,
+                            metavar='EMLR', help='Embedding dropout')
         parser.add_argument('--wd', default=1e-4, type=float,
                             help='weight decay (default: 1e-4)')
         parser.add_argument('--embwd', default=0, type=float,

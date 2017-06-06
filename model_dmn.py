@@ -20,6 +20,12 @@ class EpisodicMemoryModule(nn.Module):
         self.W2 = nn.Linear(mem_dim, 1)
         self.memory_rnn = nn.GRUCell(mem_dim, mem_dim)
         self.attention_rnn = nn.GRUCell(mem_dim, mem_dim)
+        if self.cudaFlag:
+            self.Wb = self.Wb.cuda()
+            self.W1 = self.W1.cuda()
+            self.W2 = self.W2.cuda()
+            self.memory_rnn = self.memory_rnn.cuda()
+            self.attention_rnn = self.attention_rnn.cuda()
 
     def forward(self, c, q):
         m_prev = q
@@ -31,6 +37,8 @@ class EpisodicMemoryModule(nn.Module):
 
     def episode_forward(self, c, m, q):
         h_prev = Var(torch.zeros(1, self.mem_dim))
+        if self.cudaFlag:
+            h_prev = h_prev.cuda()
         for t in range(c.size(0)):
             c_t = c[t]
             z = self.make_z(c_t, m, q)
@@ -61,6 +69,8 @@ class InputModule(nn.Module):
         self.mem_dim = mem_dim
 
         self.rnn = nn.GRU(in_dim, mem_dim)
+        if self.cudaFlag:
+            self.rnn = self.rnn.cuda()
 
     def forward(self, in_emb):
         c, _ = self.rnn(in_emb)
@@ -75,6 +85,8 @@ class QuestionModule(nn.Module):
         self.mem_dim = mem_dim
 
         self.rnn = nn.GRU(in_dim, mem_dim)
+        if self.cudaFlag:
+            self.rnn = self.rnn.cuda()
 
     def forward(self, in_emb):
         _, q = self.rnn(in_emb)
@@ -92,6 +104,10 @@ class AnswerModule(nn.Module):
         self.rnn = nn.GRUCell(out_dim, mem_dim)
         self.Wa = nn.Linear(mem_dim, out_dim)
 
+        if self.cudaFlag:
+            self.rnn = self.rnn.cuda()
+            self.Wa = self.Wa.cuda()
+
     def forward(self, m):
         a_prev = m
         y_t = F.softmax(self.Wa(a_prev))
@@ -101,7 +117,7 @@ class AnswerModule(nn.Module):
 
 
 class DMN(nn.Module):
-    def __init__(self, cuda, in_dim, mem_dim, out_dim):
+    def __init__(self, cuda, in_dim, mem_dim, out_dim, embdrop):
         super(DMN, self).__init__()
         self.cudaFlag = cuda
         self.in_dim = in_dim
@@ -111,8 +127,11 @@ class DMN(nn.Module):
         self.question_module = QuestionModule(cuda, in_dim, mem_dim)
         self.memory_module = EpisodicMemoryModule(cuda, in_dim, mem_dim)
         self.answer_module = AnswerModule(cuda, mem_dim, out_dim)
+        self.emb_dropout = nn.Dropout(p=embdrop)
 
     def forward(self, input_emb, question_emb):
+        input_emb = self.emb_dropout(input_emb)
+        question_emb = self.emb_dropout(question_emb)
         c = self.input_module(input_emb)
         q = self.question_module(question_emb)
         m = self.memory_module(c, q)
@@ -120,7 +139,7 @@ class DMN(nn.Module):
         return y
 
 class DMNWraper(nn.Module):
-    def __init__(self, cuda, in_dim, mem_dim, out_dim, criterion, train_subtrees, num_classes):
+    def __init__(self, cuda, in_dim, mem_dim, out_dim, criterion, train_subtrees, num_classes, embdrop):
         super(DMNWraper, self).__init__()
         self.cudaFlag = cuda
         self.in_dim = in_dim
@@ -143,7 +162,7 @@ class DMNWraper(nn.Module):
         else:
             n_subtree = self.train_subtrees + 1
         discard_subtree = 0  # trees are discard because neutral
-        if training:
+        if training == True:
             for i in range(n_subtree):
                 if i == 0:
                     node = nodes[0]
@@ -167,7 +186,10 @@ class DMNWraper(nn.Module):
 
             loss = loss
             n_subtree = n_subtree - discard_subtree
-            return output, loss, n_subtree
+        else:
+            output = self.dmn(emb, question_emb)
+
+        return output, loss, n_subtree
 
 
 def run_it():
