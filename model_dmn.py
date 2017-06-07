@@ -110,7 +110,7 @@ class AnswerModule(nn.Module):
 
     def forward(self, m):
         a_prev = m
-        y_t = F.softmax(self.Wa(a_prev))
+        y_t = F.log_softmax(self.Wa(a_prev))
         return y_t
 
 

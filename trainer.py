@@ -39,7 +39,7 @@ class SentimentTrainer(object):
             tree, sent, label = dataset[indices[idx]]
             input = Var(sent)
             question = Var(self.question.long())
-            target = Var(map_label_to_target_sentiment(label,dataset.num_classes, fine_grain=self.args.fine_grain))
+            target = Var(map_label_to_target_sentiment(label,self.args.num_classes, fine_grain=self.args.fine_grain))
             if self.args.cuda:
                 input = input.cuda()
                 question = question.cuda()
@@ -100,12 +100,11 @@ class SentimentTrainer(object):
         loss = 0
         predictions = torch.zeros(len(dataset))
         predictions = predictions
-        indices = torch.range(1,dataset.num_classes)
         for idx in tqdm(xrange(len(dataset)),desc='Testing epoch  '+str(self.epoch)+''):
             tree, sent, label = dataset[idx]
             input = Var(sent, volatile=True)
             question = Var(self.question.long(), volatile=True)
-            target = Var(map_label_to_target_sentiment(label,dataset.num_classes, fine_grain=self.args.fine_grain), volatile=True)
+            target = Var(map_label_to_target_sentiment(label,self.args.num_classes, fine_grain=self.args.fine_grain), volatile=True)
             if self.args.cuda:
                 input = input.cuda()
                 target = target.cuda()
@@ -115,7 +114,7 @@ class SentimentTrainer(object):
             output, _, _= self.model.forward(tree, emb, question_emb, training = False) # size(1,5)
             err = self.criterion(output, target)
             loss += err.data[0]
-            if dataset.num_classes == 3:
+            if self.args.num_classes == 3:
                 output[:,1] = -9999 # no need middle (neutral) value
             val, pred = torch.max(output, 1)
             pred_cpu = pred.data.cpu()[0][0]

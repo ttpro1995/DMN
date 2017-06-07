@@ -1,0 +1,10 @@
+
+*.pyc
+
+logs/
+
+data/
+
+saved_model/
+
+\.idea/
