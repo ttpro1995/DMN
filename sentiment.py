@@ -197,11 +197,7 @@ def main():
     metrics = Metrics(args.num_classes)
     utils.count_param(model)
 
-    # create trainer object for training and testing
-    if args.model_name == 'dependency' or args.model_name == 'constituency':
-        trainer = SentimentTrainer(args, model, embedding_model, criterion, optimizer)
-    elif args.model_name == 'lstm' or args.model_name == 'bilstm':
-        trainer = SentimentTrainer(args, model, embedding_model, criterion, optimizer)
+    trainer = SentimentTrainer(args, model, embedding_model, criterion, optimizer)
 
     trainer.set_initial_emb(emb)
     question_idx = vocab.labelToIdx['sentiment']

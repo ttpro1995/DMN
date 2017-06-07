@@ -48,7 +48,7 @@ class SentimentTrainer(object):
             question_emb = F.torch.unsqueeze(self.embedding_model(question), 1)
 
 
-            output, err, n_subtrees = self.model.forward(tree, emb, question_emb, training=True)
+            output, err, n_subtrees = self.model(tree, emb, question_emb, training=True)
             batch_size = self.args.batchsize * n_subtrees
 
 
@@ -111,7 +111,7 @@ class SentimentTrainer(object):
                 question = question.cuda()
             emb = F.torch.unsqueeze(self.embedding_model(input),1)
             question_emb = F.torch.unsqueeze(self.embedding_model(question), 1)
-            output, _, _= self.model.forward(tree, emb, question_emb, training = False) # size(1,5)
+            output, _, _= self.model(tree, emb, question_emb, training = False) # size(1,5)
             err = self.criterion(output, target)
             loss += err.data[0]
             if self.args.num_classes == 3:
